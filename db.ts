@@ -1,18 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product, Category, NewsArticle, ComparisonPage, BudgetListPage } from './types';
 
-// ✅ Vite environment variables
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-// ✅ Supabase client
-export const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Helper
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+/* -------------------------------- PRODUCTS -------------------------------- */
 
 export const api = {
   products: {
@@ -21,11 +15,7 @@ export const api = {
         .from('products')
         .select('*');
 
-      if (error) {
-        console.error('Products fetch error:', error);
-        throw error;
-      }
-
+      if (error) throw error;
       return data ?? [];
     },
 
@@ -34,24 +24,20 @@ export const api = {
         .from('products')
         .upsert(product);
 
-      if (error) {
-        console.error('Product save error:', error);
-        throw error;
-      }
+      if (error) throw error;
     },
 
-    remove: async (id: string) => {
+    delete: async (id: string) => {
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
-      if (error) {
-        console.error('Product delete error:', error);
-        throw error;
-      }
-    }
+      if (error) throw error;
+    },
   },
+
+/* ------------------------------- COMPARISONS ------------------------------- */
 
   comparisons: {
     getAll: async (): Promise<ComparisonPage[]> => {
@@ -69,8 +55,19 @@ export const api = {
         .upsert(comp);
 
       if (error) throw error;
-    }
+    },
+
+    delete: async (id: string) => {
+      const { error } = await supabase
+        .from('comparisons')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
   },
+
+/* ------------------------------- BUDGET LISTS ------------------------------- */
 
   budgetLists: {
     getAll: async (): Promise<BudgetListPage[]> => {
@@ -88,13 +85,25 @@ export const api = {
         .upsert(list);
 
       if (error) throw error;
-    }
-  }
+    },
+
+    delete: async (id: string) => {
+      const { error } = await supabase
+        .from('budget_lists')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+  },
 };
 
-// News stays local
-export const getNews = (): NewsArticle[] =>
-  JSON.parse(localStorage.getItem('at_news') || '[]');
+/* --------------------------------- NEWS ---------------------------------- */
+
+export const getNews = (): NewsArticle[] => {
+  const stored = localStorage.getItem('at_news');
+  return stored ? JSON.parse(stored) : [];
+};
 
 export const saveNews = (news: NewsArticle) => {
   const current = getNews();
