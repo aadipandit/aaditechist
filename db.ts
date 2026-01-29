@@ -3,12 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 import { Product, Category, NewsArticle, ComparisonPage, BudgetListPage } from './types';
 
 // Initialize Supabase Client (Assume keys in process.env)
-const SUPABASE_URL = (process.env as any).SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = (process.env as any).SUPABASE_ANON_KEY || '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
-const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) 
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
-  : null;
+const supabase =
+  SUPABASE_URL && SUPABASE_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_KEY)
+    : null;
 
 /**
  * Mock Data for when DB is not connected
