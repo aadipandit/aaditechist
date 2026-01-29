@@ -1,218 +1,119 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product, Category, NewsArticle, ComparisonPage, BudgetListPage } from './types';
 
-// ================= SUPABASE INIT =================
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+// ✅ Correct Vite env usage
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+// ✅ Create client only if keys exist
 export const supabase =
   SUPABASE_URL && SUPABASE_KEY
     ? createClient(SUPABASE_URL, SUPABASE_KEY)
     : null;
 
-// ================= MOCK DATA =================
-const INITIAL_PRODUCTS: Product[] = [];
+// Delay helper
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-// ================= HELPERS =================
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
+// Local fallback
 const mockStorage = {
   get: (key: string) => JSON.parse(localStorage.getItem(key) || 'null'),
-  set: (key: string, val: any) => localStorage.setItem(key, JSON.stringify(val))
+  set: (key: string, val: any) =>
+    localStorage.setItem(key, JSON.stringify(val)),
 };
 
-// ================= API =================
 export const api = {
   products: {
-    getAll: async (): Promise<Product[]> => {
-      if (supabase) {
-        const { data, error } = await supabase.from('products').select('*');
-        if (error) {
-          console.error('GET PRODUCTS ERROR:', error);
-          return [];
-        }
-        return data || [];
-      }
-
-      await delay(300);
-      return mockStorage.get('at_products') || INITIAL_PRODUCTS;
+    async getAll(): Promise<Product[]> {
+      if (!supabase) return mockStorage.get('at_products') || [];
+      const { data, error } = await supabase.from('products').select('*');
+      if (error) throw error;
+      return data || [];
     },
 
-    save: async (product: Product) => {
-      if (supabase) {
-        const payload = {
-          id: product.id,
-          slug: product.slug,
-          name: product.name,
-          brand: product.brand,
-          category: product.category,
-          price: product.price,
-          image_url: product.imageUrl,
-          description: product.description,
-          date_added: product.dateAdded,
-          specs: product.specs // JSONB
-        };
-
-        const { data, error } = await supabase
-          .from('products')
-          .upsert(payload)
-          .select();
-
-        if (error) {
-          console.error('SAVE PRODUCT ERROR:', error);
-          alert(`Supabase error: ${error.message}`);
-          return;
-        }
-
-        console.log('PRODUCT SAVED:', data);
+    async save(product: Product) {
+      if (!supabase) {
+        const items = await this.getAll();
+        mockStorage.set(
+          'at_products',
+          [...items.filter(p => p.id !== product.id), product]
+        );
         return;
       }
 
-      // fallback
-      await delay(300);
-      const products = await api.products.getAll();
-      mockStorage.set(
-        'at_products',
-        [...products.filter(p => p.id !== product.id), product]
-      );
+      const { error } = await supabase.from('products').upsert(product);
+      if (error) throw error;
     },
 
-    delete: async (id: string) => {
-      if (supabase) {
-        const { error } = await supabase.from('products').delete().eq('id', id);
-        if (error) {
-          console.error('DELETE PRODUCT ERROR:', error);
-          alert(error.message);
-        }
+    async remove(id: string) {
+      if (!supabase) {
+        const items = await this.getAll();
+        mockStorage.set(
+          'at_products',
+          items.filter(p => p.id !== id)
+        );
         return;
       }
 
-      await delay(300);
-      const products = await api.products.getAll();
-      mockStorage.set(
-        'at_products',
-        products.filter(p => p.id !== id)
-      );
-    }
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
+    },
   },
 
   comparisons: {
-    getAll: async (): Promise<ComparisonPage[]> => {
-      if (supabase) {
-        const { data, error } = await supabase.from('comparisons').select('*');
-        if (error) {
-          console.error(error);
-          return [];
-        }
-        return data || [];
-      }
-      return mockStorage.get('at_comparisons') || [];
+    async getAll(): Promise<ComparisonPage[]> {
+      if (!supabase) return mockStorage.get('at_comparisons') || [];
+      const { data, error } = await supabase.from('comparisons').select('*');
+      if (error) throw error;
+      return data || [];
     },
 
-    save: async (comp: ComparisonPage) => {
-      if (supabase) {
-        const { error } = await supabase.from('comparisons').upsert(comp);
-        if (error) alert(error.message);
+    async save(item: ComparisonPage) {
+      if (!supabase) {
+        const items = await this.getAll();
+        mockStorage.set(
+          'at_comparisons',
+          [...items.filter(i => i.id !== item.id), item]
+        );
         return;
       }
-      const items = await api.comparisons.getAll();
-      mockStorage.set(
-        'at_comparisons',
-        [...items.filter(i => i.id !== comp.id), comp]
-      );
+
+      const { error } = await supabase.from('comparisons').upsert(item);
+      if (error) throw error;
     },
 
-    delete: async (id: string) => {
-      if (supabase) {
-        const { error } = await supabase.from('comparisons').delete().eq('id', id);
-        if (error) alert(error.message);
-        return;
-      }
-      const items = await api.comparisons.getAll();
-      mockStorage.set(
-        'at_comparisons',
-        items.filter(i => i.id !== id)
-      );
-    }
+    async remove(id: string) {
+      if (!supabase) return;
+      const { error } = await supabase.from('comparisons').delete().eq('id', id);
+      if (error) throw error;
+    },
   },
 
   budgetLists: {
-    getAll: async (): Promise<BudgetListPage[]> => {
-      if (supabase) {
-        const { data, error } = await supabase.from('budget_lists').select('*');
-        if (error) {
-          console.error(error);
-          return [];
-        }
-        return data || [];
-      }
-      return mockStorage.get('at_budget_lists') || [];
+    async getAll(): Promise<BudgetListPage[]> {
+      if (!supabase) return mockStorage.get('at_budget_lists') || [];
+      const { data, error } = await supabase.from('budget_lists').select('*');
+      if (error) throw error;
+      return data || [];
     },
 
-    save: async (list: BudgetListPage) => {
-      if (supabase) {
-        const { error } = await supabase.from('budget_lists').upsert(list);
-        if (error) alert(error.message);
+    async save(item: BudgetListPage) {
+      if (!supabase) {
+        const items = await this.getAll();
+        mockStorage.set(
+          'at_budget_lists',
+          [...items.filter(i => i.id !== item.id), item]
+        );
         return;
       }
-      const items = await api.budgetLists.getAll();
-      mockStorage.set(
-        'at_budget_lists',
-        [...items.filter(i => i.id !== list.id), list]
-      );
+
+      const { error } = await supabase.from('budget_lists').upsert(item);
+      if (error) throw error;
     },
 
-    delete: async (id: string) => {
-      if (supabase) {
-        const { error } = await supabase.from('budget_lists').delete().eq('id', id);
-        if (error) alert(error.message);
-        return;
-      }
-      const items = await api.budgetLists.getAll();
-      mockStorage.set(
-        'at_budget_lists',
-        items.filter(i => i.id !== id)
-      );
-    }
-  }
+    async remove(id: string) {
+      if (!supabase) return;
+      const { error } = await supabase.from('budget_lists').delete().eq('id', id);
+      if (error) throw error;
+    },
+  },
 };
-
-// ================= NEWS (LOCAL) =================
-export const getNews = (): NewsArticle[] =>
-  JSON.parse(localStorage.getItem('at_news') || '[]');
-
-export const saveNews = (news: NewsArticle) => {
-  const current = getNews();
-  localStorage.setItem(
-    'at_news',
-    JSON.stringify([...current.filter(n => n.id !== news.id), news])
-  );
-};
-
-// ================= RANKING =================
-export const rankProducts = (products: Product[], category: Category) =>
-  products
-    .map(p => {
-      let score = 0;
-      p.specs.forEach(s => {
-        const v = Number(s.value);
-        if (!isNaN(v)) {
-          if (category === Category.SMARTPHONE) score += v;
-          if (category === Category.LAPTOP) score += v * 1.5;
-        }
-      });
-      return { product: p, score: score / (p.price || 1) };
-    })
-    .sort((a, b) => b.score - a.score);
-
-// ================= LEGACY EXPORTS =================
-export const getProducts = api.products.getAll;
-export const saveProduct = api.products.save;
-export const deleteProduct = api.products.delete;
-export const getComparisons = api.comparisons.getAll;
-export const saveComparison = api.comparisons.save;
-export const deleteComparison = api.comparisons.delete;
-export const getBudgetLists = api.budgetLists.getAll;
-export const saveBudgetList = api.budgetLists.save;
-export const deleteBudgetList = api.budgetLists.delete;
-
