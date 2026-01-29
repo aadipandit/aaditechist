@@ -1,0 +1,8 @@
+{
+  "name": "AadiTechist",
+  "description": "A fully automated tech comparison platform with dynamic product pages, side-by-side comparisons, and real-time tech news updates.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
