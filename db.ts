@@ -111,3 +111,5 @@ export const saveNews = (news: NewsArticle) => {
   const updated = [...current.filter(n => n.id !== news.id), news]
   localStorage.setItem('at_news', JSON.stringify(updated))
 }
+console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
+
