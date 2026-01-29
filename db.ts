@@ -1,126 +1,113 @@
-import { createClient } from '@supabase/supabase-js';
-import { Product, Category, NewsArticle, ComparisonPage, BudgetListPage } from './types';
+import { createClient } from '@supabase/supabase-js'
+import { Product, Category, NewsArticle, ComparisonPage, BudgetListPage } from './types'
 
-/* =========================
-   SUPABASE INITIALIZATION
-   ========================= */
+// ✅ Vite environment variables
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
-// ✅ Vite frontend must use VITE_ prefixed vars
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-
-// Safety check
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.error('❌ Supabase env vars missing');
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('❌ Supabase env vars missing')
 }
 
+// ✅ Supabase client
 export const supabase = createClient(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
+  SUPABASE_ANON_KEY
+)
 
-/* =========================
-   API LAYER
-   ========================= */
+/* ---------------- PRODUCTS ---------------- */
 
-export const api = {
-  products: {
-    async getAll(): Promise<Product[]> {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+export const getProducts = async (): Promise<Product[]> => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
 
-      if (error) throw error;
-      return data || [];
-    },
+  if (error) throw error
+  return data || []
+}
 
-    async save(product: Product) {
-      const { error } = await supabase
-        .from('products')
-        .upsert(product, { onConflict: 'id' });
+export const saveProduct = async (product: Product) => {
+  const { error } = await supabase
+    .from('products')
+    .upsert(product)
 
-      if (error) throw error;
-    },
+  if (error) throw error
+}
 
-    async delete(id: string) {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
+export const removeProduct = async (id: string) => {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', id)
 
-      if (error) throw error;
-    }
-  },
+  if (error) throw error
+}
 
-  comparisons: {
-    async getAll(): Promise<ComparisonPage[]> {
-      const { data, error } = await supabase
-        .from('comparisons')
-        .select('*');
+/* ---------------- COMPARISONS ---------------- */
 
-      if (error) throw error;
-      return data || [];
-    },
+export const getComparisons = async (): Promise<ComparisonPage[]> => {
+  const { data, error } = await supabase
+    .from('comparisons')
+    .select('*')
 
-    async save(comp: ComparisonPage) {
-      const { error } = await supabase
-        .from('comparisons')
-        .upsert(comp, { onConflict: 'id' });
+  if (error) throw error
+  return data || []
+}
 
-      if (error) throw error;
-    },
+export const saveComparison = async (comp: ComparisonPage) => {
+  const { error } = await supabase
+    .from('comparisons')
+    .upsert(comp)
 
-    async delete(id: string) {
-      const { error } = await supabase
-        .from('comparisons')
-        .delete()
-        .eq('id', id);
+  if (error) throw error
+}
 
-      if (error) throw error;
-    }
-  },
+export const removeComparison = async (id: string) => {
+  const { error } = await supabase
+    .from('comparisons')
+    .delete()
+    .eq('id', id)
 
-  budgetLists: {
-    async getAll(): Promise<BudgetListPage[]> {
-      const { data, error } = await supabase
-        .from('budget_lists')
-        .select('*');
+  if (error) throw error
+}
 
-      if (error) throw error;
-      return data || [];
-    },
+/* ---------------- BUDGET LISTS ---------------- */
 
-    async save(list: BudgetListPage) {
-      const { error } = await supabase
-        .from('budget_lists')
-        .upsert(list, { onConflict: 'id' });
+export const getBudgetLists = async (): Promise<BudgetListPage[]> => {
+  const { data, error } = await supabase
+    .from('budget_lists')
+    .select('*')
 
-      if (error) throw error;
-    },
+  if (error) throw error
+  return data || []
+}
 
-    async delete(id: string) {
-      const { error } = await supabase
-        .from('budget_lists')
-        .delete()
-        .eq('id', id);
+export const saveBudgetList = async (list: BudgetListPage) => {
+  const { error } = await supabase
+    .from('budget_lists')
+    .upsert(list)
 
-      if (error) throw error;
-    }
-  }
-};
+  if (error) throw error
+}
 
-/* =========================
-   NEWS (LOCAL ONLY)
-   ========================= */
+export const removeBudgetList = async (id: string) => {
+  const { error } = await supabase
+    .from('budget_lists')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+/* ---------------- NEWS (local only) ---------------- */
 
 export const getNews = (): NewsArticle[] => {
-  const stored = localStorage.getItem('at_news');
-  return stored ? JSON.parse(stored) : [];
-};
+  const stored = localStorage.getItem('at_news')
+  return stored ? JSON.parse(stored) : []
+}
 
 export const saveNews = (news: NewsArticle) => {
-  const current = getNews();
-  const updated = [...current.filter(n => n.id !== news.id), news];
-  localStorage.setItem('at_news', JSON.stringify(updated));
-};
+  const current = getNews()
+  const updated = [...current.filter(n => n.id !== news.id), news]
+  localStorage.setItem('at_news', JSON.stringify(updated))
+}
