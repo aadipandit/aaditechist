@@ -73,17 +73,32 @@ export const api = {
       const stored = mockStorage.get('at_products');
       return stored || INITIAL_PRODUCTS;
     },
-    save: async (product: Product) => {
-      if (supabase) {
-        const { error } = await supabase.from('products').upsert(product);
-        if (error) throw error;
-        return;
-      }
-      await delay(500);
-      const products = await api.products.getAll();
-      const updated = [...products.filter(p => p.id !== product.id), product];
-      mockStorage.set('at_products', updated);
-    },
+  save: async (product: Product) => {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('products')
+      .upsert(product)
+      .select();
+
+    console.log('PRODUCT SENT:', product);
+    console.log('SUPABASE RESPONSE:', data);
+    console.log('SUPABASE ERROR:', error);
+
+    if (error) {
+      alert('Supabase error: ' + error.message);
+      throw error;
+    }
+
+    return;
+  }
+
+  // fallback
+  await delay(500);
+  const products = await api.products.getAll();
+  const updated = [...products.filter(p => p.id !== product.id), product];
+  mockStorage.set('at_products', updated);
+}
+
     delete: async (id: string) => {
       if (supabase) {
         const { error } = await supabase.from('products').delete().match({ id });
