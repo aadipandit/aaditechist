@@ -1,119 +1,126 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product, Category, NewsArticle, ComparisonPage, BudgetListPage } from './types';
 
-// ✅ Correct Vite env usage
+/* =========================
+   SUPABASE INITIALIZATION
+   ========================= */
+
+// ✅ Vite frontend must use VITE_ prefixed vars
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-// ✅ Create client only if keys exist
-export const supabase =
-  SUPABASE_URL && SUPABASE_KEY
-    ? createClient(SUPABASE_URL, SUPABASE_KEY)
-    : null;
+// Safety check
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.error('❌ Supabase env vars missing');
+}
 
-// Delay helper
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+export const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
 
-// Local fallback
-const mockStorage = {
-  get: (key: string) => JSON.parse(localStorage.getItem(key) || 'null'),
-  set: (key: string, val: any) =>
-    localStorage.setItem(key, JSON.stringify(val)),
-};
+/* =========================
+   API LAYER
+   ========================= */
 
 export const api = {
   products: {
     async getAll(): Promise<Product[]> {
-      if (!supabase) return mockStorage.get('at_products') || [];
-      const { data, error } = await supabase.from('products').select('*');
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
       return data || [];
     },
 
     async save(product: Product) {
-      if (!supabase) {
-        const items = await this.getAll();
-        mockStorage.set(
-          'at_products',
-          [...items.filter(p => p.id !== product.id), product]
-        );
-        return;
-      }
+      const { error } = await supabase
+        .from('products')
+        .upsert(product, { onConflict: 'id' });
 
-      const { error } = await supabase.from('products').upsert(product);
       if (error) throw error;
     },
 
-    async remove(id: string) {
-      if (!supabase) {
-        const items = await this.getAll();
-        mockStorage.set(
-          'at_products',
-          items.filter(p => p.id !== id)
-        );
-        return;
-      }
+    async delete(id: string) {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
 
-      const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) throw error;
-    },
+    }
   },
 
   comparisons: {
     async getAll(): Promise<ComparisonPage[]> {
-      if (!supabase) return mockStorage.get('at_comparisons') || [];
-      const { data, error } = await supabase.from('comparisons').select('*');
+      const { data, error } = await supabase
+        .from('comparisons')
+        .select('*');
+
       if (error) throw error;
       return data || [];
     },
 
-    async save(item: ComparisonPage) {
-      if (!supabase) {
-        const items = await this.getAll();
-        mockStorage.set(
-          'at_comparisons',
-          [...items.filter(i => i.id !== item.id), item]
-        );
-        return;
-      }
+    async save(comp: ComparisonPage) {
+      const { error } = await supabase
+        .from('comparisons')
+        .upsert(comp, { onConflict: 'id' });
 
-      const { error } = await supabase.from('comparisons').upsert(item);
       if (error) throw error;
     },
 
-    async remove(id: string) {
-      if (!supabase) return;
-      const { error } = await supabase.from('comparisons').delete().eq('id', id);
+    async delete(id: string) {
+      const { error } = await supabase
+        .from('comparisons')
+        .delete()
+        .eq('id', id);
+
       if (error) throw error;
-    },
+    }
   },
 
   budgetLists: {
     async getAll(): Promise<BudgetListPage[]> {
-      if (!supabase) return mockStorage.get('at_budget_lists') || [];
-      const { data, error } = await supabase.from('budget_lists').select('*');
+      const { data, error } = await supabase
+        .from('budget_lists')
+        .select('*');
+
       if (error) throw error;
       return data || [];
     },
 
-    async save(item: BudgetListPage) {
-      if (!supabase) {
-        const items = await this.getAll();
-        mockStorage.set(
-          'at_budget_lists',
-          [...items.filter(i => i.id !== item.id), item]
-        );
-        return;
-      }
+    async save(list: BudgetListPage) {
+      const { error } = await supabase
+        .from('budget_lists')
+        .upsert(list, { onConflict: 'id' });
 
-      const { error } = await supabase.from('budget_lists').upsert(item);
       if (error) throw error;
     },
 
-    async remove(id: string) {
-      if (!supabase) return;
-      const { error } = await supabase.from('budget_lists').delete().eq('id', id);
+    async delete(id: string) {
+      const { error } = await supabase
+        .from('budget_lists')
+        .delete()
+        .eq('id', id);
+
       if (error) throw error;
-    },
-  },
+    }
+  }
+};
+
+/* =========================
+   NEWS (LOCAL ONLY)
+   ========================= */
+
+export const getNews = (): NewsArticle[] => {
+  const stored = localStorage.getItem('at_news');
+  return stored ? JSON.parse(stored) : [];
+};
+
+export const saveNews = (news: NewsArticle) => {
+  const current = getNews();
+  const updated = [...current.filter(n => n.id !== news.id), news];
+  localStorage.setItem('at_news', JSON.stringify(updated));
 };
