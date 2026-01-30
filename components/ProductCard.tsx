@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { IndianRupee, ArrowRightLeft, Star } from 'lucide-react';
+import { IndianRupee, ArrowRightLeft, Star, ExternalLink } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -19,9 +19,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onCompare, isCompare
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
-        <div className="absolute top-3 right-3 flex space-x-2">
+        <div className="absolute top-3 right-3 flex flex-col space-y-2">
             {product.price < 20000 && (
-                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase">Budget King</span>
+                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase shadow-lg">Budget King</span>
             )}
         </div>
       </div>
@@ -39,30 +39,43 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onCompare, isCompare
         </Link>
         <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4 flex-grow">{product.description}</p>
         
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center font-bold text-xl text-slate-900 dark:text-white">
-            <IndianRupee className="w-4 h-4 mr-0.5" />
-            {product.price.toLocaleString('en-IN')}
-          </div>
-          
-          <div className="flex space-x-2">
+        <div className="space-y-3 mt-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center font-black text-xl text-slate-900 dark:text-white">
+              <IndianRupee className="w-4 h-4 mr-0.5" />
+              {product.price.toLocaleString('en-IN')}
+            </div>
             <button
                 onClick={() => onCompare?.(product.id)}
-                className={`p-2 rounded-lg border transition-colors ${
+                className={`p-2 rounded-lg border transition-all ${
                   isCompareMode 
-                  ? 'bg-primary-600 border-primary-600 text-white' 
+                  ? 'bg-primary-600 border-primary-600 text-white scale-110' 
                   : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
                 title="Add to Compare"
             >
                 <ArrowRightLeft className="w-5 h-5" />
             </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <Link
                 to={`/product/${product.slug}`}
-                className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-sm font-semibold hover:bg-primary-600 dark:hover:bg-primary-500 transition-colors"
+                className="flex items-center justify-center px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
-                View
+                Details
             </Link>
+            {product.affiliateUrl && (
+              <a
+                href={product.affiliateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center space-x-1 px-4 py-2 bg-primary-600 text-white rounded-xl text-xs font-bold hover:bg-primary-700 transition-all shadow-md shadow-primary-500/20"
+              >
+                <span>{product.buyButtonText || 'Buy Now'}</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
           </div>
         </div>
       </div>
