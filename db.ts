@@ -1,44 +1,86 @@
 // db.ts
 import { createClient } from '@supabase/supabase-js'
 
-// ✅ Vite-safe environment variables
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL
-
+// -----------------------------
+// Environment variables (Vite)
+// -----------------------------
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// ❗ Hard safety check (prevents crash)
 if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Supabase environment variables missing')
-  throw new Error('Supabase is not configured correctly')
+  throw new Error('❌ Supabase environment variables are missing')
 }
 
-// ✅ SINGLE shared client
-export const api = createClient(supabaseUrl, supabaseKey)
+// -----------------------------
+// Supabase client (internal)
+// -----------------------------
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-/* ----------------------------
-   Example helper functions
------------------------------*/
+// -----------------------------
+// API LAYER (what your app uses)
+// -----------------------------
+export const api = {
+  products: {
+    async getAll() {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
 
+      if (error) throw error
+      return data
+    },
+
+    async save(product: any) {
+      const { data, error } = await supabase
+        .from('products')
+        .insert(product)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    }
+  },
+
+  comparisons: {
+    async getAll() {
+      const { data, error } = await supabase
+        .from('comparisons')
+        .select('*')
+
+      if (error) throw error
+      return data
+    }
+  },
+
+  budgetLists: {
+    async getAll() {
+      const { data, error } = await supabase
+        .from('budget_lists')
+        .select('*')
+
+      if (error) throw error
+      return data
+    }
+  },
+
+  news: {
+    async getAll() {
+      const { data, error } = await supabase
+        .from('news')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data
+    }
+  }
+}
+
+// Optional direct helpers (if used elsewhere)
 export async function getNews() {
-  const { data, error } = await api
-    .from('news')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return data
-}
-
-export async function insertProduct(product: any) {
-  const { data, error } = await api
-    .from('products')
-    .insert(product)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
+  return api.news.getAll()
 }
